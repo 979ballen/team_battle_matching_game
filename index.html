@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jesus The God Who Cares - Team Battle Matching Game</title>
+    
+    <style>
+        :root {
+            --bg-grad-1: #0f172a;
+            --bg-grad-2: #1e1b4b;
+            --team-a-color: #ef4444;
+            --team-a-glow: rgba(239, 68, 68, 0.4);
+            --team-b-color: #3b82f6;
+            --team-b-glow: rgba(59, 130, 246, 0.4);
+            --gold-accent: #f59e0b;
+            --green-match: #10b981;
+            --card-dark: #1e293b;
+            --card-text: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2));
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 1rem;
+            min-height: 100vh;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Top Navigation & Scoreboard */
+        .scoreboard {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 1rem;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 3px solid #334155;
+            padding: 1rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .team-box {
+            background: rgba(30, 41, 59, 0.9);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 3px solid transparent;
+        }
+
+        .team-box.team-a {
+            border-color: var(--team-a-color);
+        }
+
+        .team-box.team-b {
+            border-color: var(--team-b-color);
+        }
+
+        .team-box.active-turn {
+            transform: scale(1.03);
+            box-shadow: 0 0 20px var(--glow-color);
+        }
+
+        .team-box.team-a.active-turn {
+            --glow-color: var(--team-a-glow);
+            background: linear-gradient(180deg, rgba(239, 68, 68, 0.2), rgba(30, 41, 59, 0.9));
+        }
+
+        .team-box.team-b.active-turn {
+            --glow-color: var(--team-b-glow);
+            background: linear-gradient(180deg, rgba(59, 130, 246, 0.2), rgba(30, 41, 59, 0.9));
+        }
+
+        .team-name-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .team-name {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #fff;
+            border: none;
+            background: transparent;
+            text-align: center;
+            max-width: 160px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .team-name:focus {
+            border-bottom: 2px dashed #94a3b8;
+        }
+
+        .edit-icon {
+            font-size: 0.8rem;
+            opacity: 0.6;
+        }
+
+        .team-score {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--gold-accent);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            margin: 0.2rem 0;
+        }
+
+        .score-adjuster {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-mini {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 0.2rem 0.5rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-mini:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .center-status {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .turn-badge {
+            background: var(--gold-accent);
+            color: #000;
+            font-weight: 900;
+            padding: 0.5rem 1.25rem;
+            border-radius: 2rem;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+            animation: pulse-badge 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-badge {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Game Board */
+        .board {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            width: 100%;
+        }
+
+        .column-header {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .card {
+            min-height: 5.8rem;
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 3px solid #334155;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--card-text);
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-3px) scale(1.01);
+            border-color: #64748b;
+        }
+
+        .card.red-card {
+            border-left: 8px solid var(--team-a-color);
+        }
+
+        .card.blue-card {
+            border-left: 8px solid var(--team-b-color);
+        }
+
+        .card-number {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #94a3b8;
+            background: rgba(255,255,255,0.05);
+            width: 3.5rem;
+            height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .card.active {
+            background: linear-gradient(145deg, #334155, #1e293b);
+            border-color: var(--gold-accent);
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+            color: #ffffff;
+        }
+
+        .card.solved {
+            background: rgba(15, 23, 42, 0.4);
+            border: 2px dashed #334155 !important;
+            box-shadow: none !important;
+            opacity: 0.3;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .card.solved .card-number,
+        .card.solved .card-text {
+            display: none;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            border: 1px solid #334155;
+        }
+
+        .btn-action {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #475569, #334155);
+        }
+
+        /* Modal & Overlay */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-card {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            border: 4px solid var(--gold-accent);
+            border-radius: 2rem;
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 580px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            transform: scale(0.85);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .modal-overlay.show .modal-card {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--gold-accent);
+            margin: 0 0 1rem 0;
+            text-transform: uppercase;
+        }
+
+        .matched-pair-box {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 1rem;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .matched-text {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #f8fafc;
+            line-height: 1.5;
+        }
+
+        .award-badge {
+            display: inline-block;
+            background: var(--green-match);
+            color: white;
+            font-weight: 900;
+            font-size: 1.4rem;
+            padding: 0.5rem 1.5rem;
+            border-radius: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            animation: bounce 0.8s infinite alternate;
+        }
+
+        .claim-btn {
+            background: linear-gradient(135deg, #10b981, #047857);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 900;
+            padding: 1rem 2.5rem;
+            border-radius: 1rem;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .claim-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Canvas for Confetti */
+        #confetti-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+
+        @media (max-width: 768px) {
+            .scoreboard {
+                grid-template-columns: 1fr;
+            }
+            .board {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="game-container">
+        
+        <!-- Scoreboard Header -->
+        <div class="scoreboard">
+            <!-- Team A -->
+            <div class="team-box team-a" id="team-a-box">
+                <div class="team-name-wrapper">
+                    <input type="text" class="team-name" id="team-a-name" value="Team A" title="Click to rename" />
+                    <span class="edit-icon">✏️</span>
+                </div>
+                <div class="team-score" id="team-a-score">0</div>
+                <div class="score-adjuster">
+                    <button class="btn-mini" onclick="adjustScore('a', 100)">+100</button>
+                    <button class="btn-mini" onclick="adjustScore('a', -100)">-100</button>
+                </div>
+            </div>
+
+            <!-- Turn Status -->
+            <div class="center-status">
+                <div class="turn-badge" id="turn-badge">TEAM A'S TURN</div>
+                <div class="controls-row">
+                    <button class="btn-mini" id="sound-btn" onclick="toggleSound()">🔊 Sound: ON</button>
+                    <button class="btn-mini" onclick="switchTurn()">🔄 Switch Turn</button>
+                </div>
+            </div>
+
+            <!-- Team B -->
+            <div class="team-box team-b" id="team-b-box">
+                <div class="team-name-wrapper">
+                    <input type="text" class="team-name" id="team-b-name" value="Team B" title="Click to rename" />
+                    <span class="edit-icon">✏️</span>
+                </div>
+                <div class="team-score" id="team-b-score">0</div>
+                <div class="score-adjuster">
+                    <button class="btn-mini" onclick="adjustScore('b', 100)">+100</button>
+                    <button class="btn-mini" onclick="adjustScore('b', -100)">-100</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Board Columns -->
+        <div class="board">
+            <div>
+                <div class="column-header">Sentence Openers</div>
+                <div class="column" id="red-column"></div>
+            </div>
+            <div>
+                <div class="column-header">Matching Endings</div>
+                <div class="column" id="blue-column"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Action Bar -->
+        <div class="action-bar">
+            <span style="color: #94a3b8; font-size: 0.95rem;">
+                👉 <strong>How to play:</strong> Tap 1 Red & 1 Blue tile to reveal text. Matches award +1,000 pts!
+            </span>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn-action btn-secondary" onclick="resetGame()">🔄 Reset Board</button>
+                <button class="btn-action" onclick="toggleFullscreen()">🖥️ Fullscreen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Celebration Modal -->
+    <div class="modal-overlay" id="match-modal">
+        <div class="modal-card">
+            <div class="modal-title">🎉 Great Match! 🎉</div>
+            <div class="matched-pair-box">
+                <div class="matched-text" id="modal-matched-text"></div>
+            </div>
+            <div class="award-badge" id="modal-award-text">+1,000 PTS FOR TEAM A!</div>
+            <button class="claim-btn" id="claim-btn" onclick="claimMatchPoints()">CLAIM POINTS!</button>
+        </div>
+    </div>
+
+    <!-- Winner Announcement Modal -->
+    <div class="modal-overlay" id="winner-modal">
+        <div class="modal-card" style="border-color: #10b981;">
+            <div class="modal-title" style="color: #10b981; font-size: 2.5rem;" id="winner-title">🏆 CHAMPIONS! 🏆</div>
+            <div style="font-size: 1.5rem; margin-bottom: 1.5rem; color: #f8fafc;" id="winner-details"></div>
+            <button class="claim-btn" onclick="closeWinnerModal()">PLAY AGAIN!</button>
+        </div>
+    </div>
+
+    <script>
+        // Lesson Review Data
+        const redCardsData = [
+            { id: 'r1', text: "People are", matchId: 'm1' },
+            { id: 'r2', text: "Jesus is the Savior who", matchId: 'm2' },
+            { id: 'r3', text: "Jesus did things that", matchId: 'm3' },
+            { id: 'r4', text: "Jesus loves you and me", matchId: 'm4' },
+            { id: 'r5', text: "Jesus told the servants to", matchId: 'm5' },
+            { id: 'r6', text: "God spoke through", matchId: 'm6' }
+        ];
+
+        const blueCardsData = [
+            { id: 'b1', text: "fill the jars with water.", matchId: 'm5' },
+            { id: 'b2', text: "men called prophets.", matchId: 'm6' },
+            { id: 'b3', text: "God’s special creation.", matchId: 'm1' },
+            { id: 'b4', text: "very much.", matchId: 'm4' },
+            { id: 'b5', text: "God promised to send.", matchId: 'm2' },
+            { id: 'b6', text: "only God could do.", matchId: 'm3' }
+        ];
+
+        // Game State
+        let currentTurn = 'a'; // 'a' or 'b'
+        let scores = { a: 0, b: 0 };
+        let activeRed = null;
+        let activeBlue = null;
+        let solvedMatchIds = [];
+        let soundEnabled = true;
+
+        // Built-in Web Audio Synthesizer (No external sound files required)
+        let audioCtx = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const now = ctx.currentTime;
+
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'match') {
+                    // Success Chime
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                    notes.forEach((freq, i) => {
+                        const noteOsc = ctx.createOscillator();
+                        const noteGain = ctx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(ctx.destination);
+                        
+                        noteOsc.type = 'triangle';
+                        noteOsc.frequency.setValueAtTime(freq, now + i * 0.08);
+                        noteGain.gain.setValueAtTime(0.2, now + i * 0.08);
+                        noteGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.3);
+                        
+                        noteOsc.start(now + i * 0.08);
+                        noteOsc.stop(now + i * 0.08 + 0.3);
+                    });
+                } else if (type === 'win') {
+                    // Fanfare Sound
+                    const notes = [440, 554.37, 659.25, 880];
+                    notes.forEach((freq, i) => {
+                        const noteOsc = ctx.createOscillator();
+                        const noteGain = ctx.createGain();
+                        noteOsc.connect(noteGain);
+                        noteGain.connect(ctx.destination);
+
+                        noteOsc.type = 'square';
+                        noteOsc.frequency.setValueAtTime(freq, now + i * 0.12);
+                        noteGain.gain.setValueAtTime(0.15, now + i * 0.12);
+                        noteGain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
+
+                        noteOsc.start(now + i * 0.12);
+                        noteOsc.stop(now + i * 0.12 + 0.4);
+                    });
+                }
+            } catch (e) {
+                console.log('Audio playback prevented');
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-btn').textContent = soundEnabled ? '🔊 Sound: ON' : 'Mute Sound';
+        }
+
+        const redColumnEl = document.getElementById('red-column');
+        const blueColumnEl = document.getElementById('blue-column');
+
+        function renderCards() {
+            redColumnEl.innerHTML = '';
+            blueColumnEl.innerHTML = '';
+
+            // Render Red Column
+            redCardsData.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card red-card';
+                
+                const isSolved = solvedMatchIds.includes(card.matchId);
+                const isActive = activeRed && activeRed.id === card.id;
+
+                if (isSolved) {
+                    cardEl.classList.add('solved');
+                } else if (isActive) {
+                    cardEl.classList.add('active');
+                    cardEl.innerHTML = `<div class="card-text">${card.text}</div>`;
+                } else {
+                    cardEl.innerHTML = `<div class="card-number">${index + 1}</div>`;
+                }
+
+                if (!isSolved) {
+                    cardEl.addEventListener('click', () => handleCardClick('red', card));
+                }
+
+                redColumnEl.appendChild(cardEl);
+            });
+
+            // Render Blue Column
+            blueCardsData.forEach((card, index) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'card blue-card';
+                
+                const isSolved = solvedMatchIds.includes(card.matchId);
+                const isActive = activeBlue && activeBlue.id === card.id;
+
+                if (isSolved) {
+                    cardEl.classList.add('solved');
+                } else if (isActive) {
+                    cardEl.classList.add('active');
+                    cardEl.innerHTML = `<div class="card-text">${card.text}</div>`;
+                } else {
+                    cardEl.innerHTML = `<div class="card-number">${index + 1}</div>`;
+                }
+
+                if (!isSolved) {
+                    cardEl.addEventListener('click', () => handleCardClick('blue', card));
+                }
+
+                blueColumnEl.appendChild(cardEl);
+            });
+
+            updateTurnUI();
+        }
+
+        function handleCardClick(type, card) {
+            playSound('click');
+
+            if (type === 'red') {
+                activeRed = (activeRed && activeRed.id === card.id) ? null : card;
+            } else {
+                activeBlue = (activeBlue && activeBlue.id === card.id) ? null : card;
+            }
+
+            renderCards();
+            checkMatchCondition();
+        }
+
+        function checkMatchCondition() {
+            if (activeRed && activeBlue) {
+                if (activeRed.matchId === activeBlue.matchId) {
+                    // Correct Match!
+                    setTimeout(() => {
+                        showMatchModal();
+                    }, 300);
+                }
+            }
+        }
+
+        function updateTurnUI() {
+            const teamABox = document.getElementById('team-a-box');
+            const teamBBox = document.getElementById('team-b-box');
+            const turnBadge = document.getElementById('turn-badge');
+
+            const teamAName = document.getElementById('team-a-name').value || "Team A";
+            const teamBName = document.getElementById('team-b-name').value || "Team B";
+
+            if (currentTurn === 'a') {
+                teamABox.classList.add('active-turn');
+                teamBBox.classList.remove('active-turn');
+                turnBadge.textContent = `${teamAName.toUpperCase()}'S TURN`;
+                turnBadge.style.background = 'var(--team-a-color)';
+                turnBadge.style.color = 'white';
+            } else {
+                teamBBox.classList.add('active-turn');
+                teamABox.classList.remove('active-turn');
+                turnBadge.textContent = `${teamBName.toUpperCase()}'S TURN`;
+                turnBadge.style.background = 'var(--team-b-color)';
+                turnBadge.style.color = 'white';
+            }
+        }
+
+        function switchTurn() {
+            currentTurn = currentTurn === 'a' ? 'b' : 'a';
+            updateTurnUI();
+        }
+
+        function adjustScore(team, amount) {
+            scores[team] = Math.max(0, scores[team] + amount);
+            document.getElementById(`team-${team}-score`).textContent = scores[team].toLocaleString();
+        }
+
+        function showMatchModal() {
+            playSound('match');
+            triggerConfetti();
+
+            const teamName = currentTurn === 'a' 
+                ? document.getElementById('team-a-name').value 
+                : document.getElementById('team-b-name').value;
+
+            document.getElementById('modal-matched-text').textContent = `"${activeRed.text} ${activeBlue.text}"`;
+            document.getElementById('modal-award-text').textContent = `+1,000 POINTS FOR ${teamName.toUpperCase()}!`;
+            
+            document.getElementById('match-modal').classList.add('show');
+        }
+
+        function claimMatchPoints() {
+            adjustScore(currentTurn, 1000);
+            solvedMatchIds.push(activeRed.matchId);
+
+            activeRed = null;
+            activeBlue = null;
+
+            document.getElementById('match-modal').classList.remove('show');
+            renderCards();
+
+            // Check if game complete
+            if (solvedMatchIds.length === redCardsData.length) {
+                setTimeout(showWinnerModal, 600);
+            } else {
+                switchTurn(); // Automatically switch turns after scoring
+            }
+        }
+
+        function showWinnerModal() {
+            playSound('win');
+            triggerConfetti(3000);
+
+            const nameA = document.getElementById('team-a-name').value;
+            const nameB = document.getElementById('team-b-name').value;
+            const scoreA = scores.a;
+            const scoreB = scores.b;
+
+            const winnerTitle = document.getElementById('winner-title');
+            const winnerDetails = document.getElementById('winner-details');
+
+            if (scoreA > scoreB) {
+                winnerTitle.textContent = `🏆 ${nameA.toUpperCase()} WINS! 🏆`;
+                winnerDetails.innerHTML = `${nameA}: <strong>${scoreA.toLocaleString()}</strong> pts<br>${nameB}: ${scoreB.toLocaleString()} pts`;
+            } else if (scoreB > scoreA) {
+                winnerTitle.textContent = `🏆 ${nameB.toUpperCase()} WINS! 🏆`;
+                winnerDetails.innerHTML = `${nameB}: <strong>${scoreB.toLocaleString()}</strong> pts<br>${nameA}: ${scoreA.toLocaleString()} pts`;
+            } else {
+                winnerTitle.textContent = `🤝 IT'S A TIE! 🤝`;
+                winnerDetails.innerHTML = `Both teams finished with <strong>${scoreA.toLocaleString()}</strong> points!`;
+            }
+
+            document.getElementById('winner-modal').classList.add('show');
+        }
+
+        function closeWinnerModal() {
+            document.getElementById('winner-modal').classList.remove('show');
+            resetGame();
+        }
+
+        function resetGame() {
+            scores = { a: 0, b: 0 };
+            document.getElementById('team-a-score').textContent = '0';
+            document.getElementById('team-b-score').textContent = '0';
+            solvedMatchIds = [];
+            activeRed = null;
+            activeBlue = null;
+            currentTurn = 'a';
+            renderCards();
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {});
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Canvas Confetti Generator
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerConfetti(duration = 1500) {
+            const colors = ['#ef4444', '#3b82f6', '#f59e0b', '#10b981', '#ec4899'];
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2,
+                    vx: (Math.random() - 0.5) * 16,
+                    vy: (Math.random() - 0.7) * 16,
+                    size: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    life: 100
+                });
+            }
+        }
+
+        function animateConfetti() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.3; // Gravity
+                p.life -= 1.5;
+
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.life <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+            requestAnimationFrame(animateConfetti);
+        }
+        animateConfetti();
+
+        // Initialize display name listeners
+        document.getElementById('team-a-name').addEventListener('input', updateTurnUI);
+        document.getElementById('team-b-name').addEventListener('input', updateTurnUI);
+
+        // Initial render
+        renderCards();
+
+    </script>
+</body>
+</html>
